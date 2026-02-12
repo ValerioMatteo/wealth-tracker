@@ -9,7 +9,7 @@ import { AuthLayout } from '@/components/layout/AuthLayout'
 
 // Pages
 import { DashboardPage } from '@/pages/DashboardPage'
-import { 
+import {
   PortfoliosPage,
   AssetsPage,
   TransactionsPage,
@@ -40,23 +40,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '50px', 
-            height: '50px', 
-            border: '4px solid #e5e7eb',
-            borderTop: '4px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto'
-          }}></div>
-          <p style={{ marginTop: '20px' }}>Caricamento...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-secondary border-t-primary"></div>
+          <p className="mt-4 text-muted-foreground">Caricamento...</p>
         </div>
       </div>
     )
@@ -74,13 +61,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
-        <div style={{ width: '50px', height: '50px', border: '4px solid #e5e7eb', borderTop: '4px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-secondary border-t-primary"></div>
       </div>
     )
   }
@@ -124,9 +106,9 @@ function App() {
 
           {/* 404 */}
           <Route path="*" element={
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              <h1 style={{ fontSize: '48px' }}>404</h1>
-              <p>Pagina non trovata</p>
+            <div className="flex h-screen flex-col items-center justify-center bg-background">
+              <h1 className="text-6xl font-bold text-foreground">404</h1>
+              <p className="mt-4 text-muted-foreground">Pagina non trovata</p>
             </div>
           } />
         </Routes>

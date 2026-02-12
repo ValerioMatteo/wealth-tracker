@@ -25,13 +25,13 @@ export function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
-          <div className="rounded-lg bg-white p-8 shadow-lg">
+          <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
             <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
                 <svg
-                  className="h-8 w-8 text-green-600"
+                  className="h-8 w-8 text-emerald-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -45,15 +45,15 @@ export function ResetPasswordPage() {
                 </svg>
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-foreground">
               Email inviata!
             </h2>
-            <p className="mb-6 text-center text-gray-600">
-              Controlla la tua email <strong>{email}</strong> per le istruzioni su come resettare la password.
+            <p className="mb-6 text-center text-muted-foreground">
+              Controlla la tua email <strong className="text-foreground">{email}</strong> per le istruzioni su come resettare la password.
             </p>
             <Link
               to="/login"
-              className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center font-medium text-white hover:bg-blue-700"
+              className="block w-full rounded-lg bg-primary px-4 py-2.5 text-center font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Torna al Login
             </Link>
@@ -64,25 +64,25 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-lg bg-white p-8 shadow-lg">
+        <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Reset Password</h1>
-            <p className="mt-2 text-gray-600">
+            <h1 className="text-3xl font-bold text-foreground">Reset Password</h1>
+            <p className="mt-2 text-muted-foreground">
               Inserisci la tua email per ricevere le istruzioni
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-600">
+            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
               {error}
             </div>
           )}
 
           <form onSubmit={handleReset} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground">
                 Email
               </label>
               <input
@@ -91,7 +91,7 @@ export function ResetPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="tuo@email.com"
               />
             </div>
@@ -99,15 +99,15 @@ export function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {loading ? 'Invio in corso...' : 'Invia link di reset'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Ricordi la password?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/login" className="font-medium text-primary hover:text-primary/80">
               Accedi
             </Link>
           </p>
