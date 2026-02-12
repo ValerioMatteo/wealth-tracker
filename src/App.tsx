@@ -24,7 +24,7 @@ import { LoginPage } from '@/pages/auth/LoginPage'
 import { SignupPage } from '@/pages/auth/SignupPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage'
-
+localStorage.clear();
 // Create React Query client
 const queryClient = new QueryClient({
   defaultOptions: {
