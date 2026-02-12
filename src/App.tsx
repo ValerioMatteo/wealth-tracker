@@ -9,15 +9,13 @@ import { AuthLayout } from '@/components/layout/AuthLayout'
 
 // Pages
 import { DashboardPage } from '@/pages/DashboardPage'
-import {
-  PortfoliosPage,
-  AssetsPage,
-  TransactionsPage,
-  CashFlowsPage,
-  DebtsPage,
-  TaxesPage,
-  SettingsPage
-} from '@/pages/PlaceholderPages'
+import { PortfoliosPage } from '@/pages/PortfoliosPage'
+import { AssetsPage } from '@/pages/AssetsPage'
+import { TransactionsPage } from '@/pages/TransactionsPage'
+import { CashFlowsPage } from '@/pages/CashFlowsPage'
+import { DebtsPage } from '@/pages/DebtsPage'
+import { TaxesPage } from '@/pages/TaxesPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 
 // Auth pages
 import { LoginPage } from '@/pages/auth/LoginPage'
