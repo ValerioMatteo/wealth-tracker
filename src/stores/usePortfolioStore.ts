@@ -1,78 +1,361 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
+import type { Portfolio, Asset, Transaction, CashFlow, Debt, TaxEvent } from '@/types'
 
-interface Portfolio {
-  id: string
-  user_id: string
-  name: string
-  currency: string
-  is_default: boolean
-}
-
-interface Asset {
-  id: string
-  portfolio_id: string
-  asset_type: string
-  symbol: string | null
-  name: string
-  quantity: number
-  purchase_price: number
-  current_price: number
-  current_value: number
-}
 
 interface PortfolioState {
   portfolios: Portfolio[]
   currentPortfolio: Portfolio | null
   assets: Asset[]
+  transactions: Transaction[]
+  cashFlows: CashFlow[]
+  debts: Debt[]
+  taxEvents: TaxEvent[]
   isLoading: boolean
   error: string | null
+
+  // Portfolio actions
   fetchPortfolios: () => Promise<void>
+  setCurrentPortfolio: (portfolio: Portfolio) => void
+  createPortfolio: (data: Partial<Portfolio>) => Promise<void>
+  updatePortfolio: (id: string, data: Partial<Portfolio>) => Promise<void>
+  deletePortfolio: (id: string) => Promise<void>
+
+  // Asset actions
+  fetchAssets: (portfolioId: string) => Promise<void>
+  createAsset: (data: Partial<Asset>) => Promise<void>
+  updateAsset: (id: string, data: Partial<Asset>) => Promise<void>
+  deleteAsset: (id: string) => Promise<void>
+
+  // Transaction actions
+  fetchTransactions: (assetId?: string) => Promise<void>
+  createTransaction: (data: Partial<Transaction>) => Promise<void>
+  deleteTransaction: (id: string) => Promise<void>
+
+  // Cash Flow actions
+  fetchCashFlows: (portfolioId: string) => Promise<void>
+  createCashFlow: (data: Partial<CashFlow>) => Promise<void>
+  updateCashFlow: (id: string, data: Partial<CashFlow>) => Promise<void>
+  deleteCashFlow: (id: string) => Promise<void>
+
+  // Debt actions
+  fetchDebts: () => Promise<void>
+  createDebt: (data: Partial<Debt>) => Promise<void>
+  updateDebt: (id: string, data: Partial<Debt>) => Promise<void>
+  deleteDebt: (id: string) => Promise<void>
+
+  // Tax actions
+  fetchTaxEvents: (taxYear?: number) => Promise<void>
+  saveTaxEvents: (events: TaxEvent[]) => Promise<void>
 }
 
-export const usePortfolioStore = create<PortfolioState>((set) => ({
+export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   portfolios: [],
   currentPortfolio: null,
   assets: [],
+  transactions: [],
+  cashFlows: [],
+  debts: [],
+  taxEvents: [],
   isLoading: false,
   error: null,
-  
+
+  // --- Portfolios ---
   fetchPortfolios: async () => {
-  console.log('📊 START fetch')
-  set({ isLoading: true })
-  
-  const result = await supabase.auth.getUser()
-  const user = result.data.user
-  
-  if (!user) {
-    set({ isLoading: false })
-    return
-  }
-  
-  const portfoliosResult = await supabase
-    .from('portfolios')
-    .select('*')
-    .eq('user_id', user.id)
-  
-  const portfolios = (portfoliosResult.data || []) as Portfolio[]
-  const firstPortfolio = portfolios.length > 0 ? portfolios[0] : null
-  
-  set({ 
-    portfolios: portfolios, 
-    currentPortfolio: firstPortfolio, 
-    isLoading: false 
-  })
-  
-  if (firstPortfolio) {
-    const assetsResult = await supabase
+    set({ isLoading: true, error: null })
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) { set({ isLoading: false }); return }
+
+    const { data, error } = await supabase
+      .from('portfolios')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+
+    if (error) { set({ isLoading: false, error: error.message }); return }
+
+    const portfolios = (data || []) as Portfolio[]
+    const current = get().currentPortfolio
+    const activePortfolio = current && portfolios.find(p => p.id === current.id)
+      ? current
+      : portfolios.find(p => p.is_default) || portfolios[0] || null
+
+    set({ portfolios, currentPortfolio: activePortfolio, isLoading: false })
+
+    if (activePortfolio) {
+      get().fetchAssets(activePortfolio.id)
+    }
+  },
+
+  setCurrentPortfolio: (portfolio) => {
+    set({ currentPortfolio: portfolio })
+    get().fetchAssets(portfolio.id)
+  },
+
+  createPortfolio: async (data) => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    const { error } = await supabase.from('portfolios').insert({
+      user_id: user.id,
+      name: data.name || 'Nuovo Portfolio',
+      description: data.description || null,
+      currency: data.currency || 'EUR',
+      is_default: data.is_default || false,
+    })
+
+    if (error) { set({ error: error.message }); return }
+    await get().fetchPortfolios()
+  },
+
+  updatePortfolio: async (id, data) => {
+    const { error } = await supabase.from('portfolios').update(data).eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    await get().fetchPortfolios()
+  },
+
+  deletePortfolio: async (id) => {
+    const { error } = await supabase.from('portfolios').delete().eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    set({ currentPortfolio: null })
+    await get().fetchPortfolios()
+  },
+
+  // --- Assets ---
+  fetchAssets: async (portfolioId) => {
+    const { data, error } = await supabase
       .from('assets')
       .select('*')
-      .eq('portfolio_id', firstPortfolio.id)
-    
-    const assets = (assetsResult.data || []) as Asset[]
-    set({ assets: assets })
-  }
-  
-  console.log('✅ DONE fetch')
-},
+      .eq('portfolio_id', portfolioId)
+      .order('name', { ascending: true })
+
+    if (error) { set({ error: error.message }); return }
+    set({ assets: (data || []) as Asset[] })
+  },
+
+  createAsset: async (data) => {
+    const portfolio = get().currentPortfolio
+    if (!portfolio) return
+
+    const { error } = await supabase.from('assets').insert({
+      portfolio_id: data.portfolio_id || portfolio.id,
+      asset_type: data.asset_type || 'stock',
+      symbol: data.symbol || null,
+      name: data.name || '',
+      quantity: data.quantity || 0,
+      purchase_price: data.purchase_price || 0,
+      purchase_date: data.purchase_date || new Date().toISOString().slice(0, 10),
+      current_price: data.current_price || data.purchase_price || 0,
+      current_value: (data.quantity || 0) * (data.current_price || data.purchase_price || 0),
+      metadata: data.metadata || {},
+    })
+
+    if (error) { set({ error: error.message }); return }
+    await get().fetchAssets(portfolio.id)
+  },
+
+  updateAsset: async (id, data) => {
+    const { error } = await supabase.from('assets').update(data).eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    const portfolio = get().currentPortfolio
+    if (portfolio) await get().fetchAssets(portfolio.id)
+  },
+
+  deleteAsset: async (id) => {
+    const { error } = await supabase.from('assets').delete().eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    const portfolio = get().currentPortfolio
+    if (portfolio) await get().fetchAssets(portfolio.id)
+  },
+
+  // --- Transactions ---
+  fetchTransactions: async (assetId) => {
+    const portfolio = get().currentPortfolio
+    if (!portfolio) return
+
+    let query = supabase
+      .from('transactions')
+      .select('*')
+      .order('transaction_date', { ascending: false })
+
+    if (assetId) {
+      query = query.eq('asset_id', assetId)
+    } else {
+      const assetIds = get().assets.map(a => a.id)
+      if (assetIds.length > 0) {
+        query = query.in('asset_id', assetIds)
+      } else {
+        set({ transactions: [] })
+        return
+      }
+    }
+
+    const { data, error } = await query
+    if (error) { set({ error: error.message }); return }
+    set({ transactions: (data || []) as Transaction[] })
+  },
+
+  createTransaction: async (data) => {
+    const totalAmount = (data.quantity || 0) * (data.price || 0) + (data.fees || 0)
+
+    const { error } = await supabase.from('transactions').insert({
+      asset_id: data.asset_id,
+      transaction_type: data.transaction_type || 'buy',
+      quantity: data.quantity || 0,
+      price: data.price || 0,
+      fees: data.fees || 0,
+      total_amount: totalAmount,
+      transaction_date: data.transaction_date || new Date().toISOString().slice(0, 10),
+      notes: data.notes || null,
+    })
+
+    if (error) { set({ error: error.message }); return }
+    await get().fetchTransactions()
+  },
+
+  deleteTransaction: async (id) => {
+    const { error } = await supabase.from('transactions').delete().eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    await get().fetchTransactions()
+  },
+
+  // --- Cash Flows ---
+  fetchCashFlows: async (portfolioId) => {
+    const { data, error } = await supabase
+      .from('cash_flows')
+      .select('*')
+      .eq('portfolio_id', portfolioId)
+      .order('payment_date', { ascending: false })
+
+    if (error) { set({ error: error.message }); return }
+    set({ cashFlows: (data || []) as CashFlow[] })
+  },
+
+  createCashFlow: async (data) => {
+    const portfolio = get().currentPortfolio
+    if (!portfolio) return
+
+    const { error } = await supabase.from('cash_flows').insert({
+      portfolio_id: data.portfolio_id || portfolio.id,
+      asset_id: data.asset_id || null,
+      flow_type: data.flow_type || 'dividend',
+      amount: data.amount || 0,
+      currency: data.currency || portfolio.currency || 'EUR',
+      payment_date: data.payment_date || new Date().toISOString().slice(0, 10),
+      is_forecasted: data.is_forecasted || false,
+      is_recurring: data.is_recurring || false,
+      recurrence_rule: data.recurrence_rule || null,
+      notes: data.notes || null,
+    })
+
+    if (error) { set({ error: error.message }); return }
+    await get().fetchCashFlows(portfolio.id)
+  },
+
+  updateCashFlow: async (id, data) => {
+    const { error } = await supabase.from('cash_flows').update(data).eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    const portfolio = get().currentPortfolio
+    if (portfolio) await get().fetchCashFlows(portfolio.id)
+  },
+
+  deleteCashFlow: async (id) => {
+    const { error } = await supabase.from('cash_flows').delete().eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    const portfolio = get().currentPortfolio
+    if (portfolio) await get().fetchCashFlows(portfolio.id)
+  },
+
+  // --- Debts ---
+  fetchDebts: async () => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('debts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) { set({ error: error.message }); return }
+    set({ debts: (data || []) as Debt[] })
+  },
+
+  createDebt: async (data) => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    const { error } = await supabase.from('debts').insert({
+      user_id: user.id,
+      debt_type: data.debt_type || 'loan',
+      lender: data.lender || '',
+      principal_amount: data.principal_amount || 0,
+      interest_rate: data.interest_rate || 0,
+      remaining_balance: data.remaining_balance || data.principal_amount || 0,
+      monthly_payment: data.monthly_payment || 0,
+      start_date: data.start_date || new Date().toISOString().slice(0, 10),
+      end_date: data.end_date || new Date().toISOString().slice(0, 10),
+      currency: data.currency || 'EUR',
+      metadata: data.metadata || {},
+    })
+
+    if (error) { set({ error: error.message }); return }
+    await get().fetchDebts()
+  },
+
+  updateDebt: async (id, data) => {
+    const { error } = await supabase.from('debts').update(data).eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    await get().fetchDebts()
+  },
+
+  deleteDebt: async (id) => {
+    const { error } = await supabase.from('debts').delete().eq('id', id)
+    if (error) { set({ error: error.message }); return }
+    await get().fetchDebts()
+  },
+
+  // --- Tax Events ---
+  fetchTaxEvents: async (taxYear) => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    let query = supabase
+      .from('tax_events')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('event_date', { ascending: false })
+
+    if (taxYear) {
+      query = query.eq('tax_year', taxYear)
+    }
+
+    const { data, error } = await query
+    if (error) { set({ error: error.message }); return }
+    set({ taxEvents: (data || []) as TaxEvent[] })
+  },
+
+  saveTaxEvents: async (events) => {
+    if (events.length === 0) return
+    const inserts = events.map(e => ({
+      user_id: e.user_id,
+      tax_year: e.tax_year,
+      event_type: e.event_type,
+      taxable_amount: e.taxable_amount,
+      tax_rate: e.tax_rate,
+      tax_owed: e.tax_owed,
+      asset_id: e.asset_id,
+      event_date: e.event_date,
+      notes: e.notes,
+    }))
+    const { error } = await supabase.from('tax_events').insert(inserts)
+    if (error) { set({ error: error.message }); return }
+    const first = events[0]
+    if (first) await get().fetchTaxEvents(first.tax_year)
+  },
 }))
