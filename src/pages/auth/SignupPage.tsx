@@ -45,13 +45,13 @@ export function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
-          <div className="rounded-lg bg-white p-8 shadow-lg">
+          <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
             <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
                 <svg
-                  className="h-8 w-8 text-green-600"
+                  className="h-8 w-8 text-emerald-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -65,15 +65,15 @@ export function SignupPage() {
                 </svg>
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-foreground">
               Controlla la tua email!
             </h2>
-            <p className="mb-6 text-center text-gray-600">
-              Ti abbiamo inviato un'email a <strong>{email}</strong>. Clicca sul link per confermare il tuo account.
+            <p className="mb-6 text-center text-muted-foreground">
+              Ti abbiamo inviato un'email a <strong className="text-foreground">{email}</strong>. Clicca sul link per confermare il tuo account.
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Vai al Login
             </button>
@@ -84,23 +84,23 @@ export function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-lg bg-white p-8 shadow-lg">
+        <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900">WealthTracker</h1>
-            <p className="mt-2 text-gray-600">Crea il tuo account</p>
+            <h1 className="text-3xl font-bold text-foreground">WealthTracker</h1>
+            <p className="mt-2 text-muted-foreground">Crea il tuo account</p>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-600">
+            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
                 Nome completo
               </label>
               <input
@@ -109,13 +109,13 @@ export function SignupPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="Mario Rossi"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground">
                 Email
               </label>
               <input
@@ -124,13 +124,13 @@ export function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="tuo@email.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
                 Password
               </label>
               <input
@@ -139,30 +139,30 @@ export function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="••••••••••••"
               />
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Minimo 12 caratteri con maiuscole, minuscole, numeri e caratteri speciali
               </p>
             </div>
 
-            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-foreground">
               <p className="font-medium">Requisiti password:</p>
               <ul className="mt-2 space-y-1 text-xs">
-                <li className={password.length >= 12 ? 'text-green-600' : ''}>
+                <li className={password.length >= 12 ? 'text-emerald-400' : 'text-muted-foreground'}>
                   {password.length >= 12 ? '✓' : '○'} Almeno 12 caratteri
                 </li>
-                <li className={/[A-Z]/.test(password) ? 'text-green-600' : ''}>
+                <li className={/[A-Z]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
                   {/[A-Z]/.test(password) ? '✓' : '○'} Una lettera maiuscola
                 </li>
-                <li className={/[a-z]/.test(password) ? 'text-green-600' : ''}>
+                <li className={/[a-z]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
                   {/[a-z]/.test(password) ? '✓' : '○'} Una lettera minuscola
                 </li>
-                <li className={/[0-9]/.test(password) ? 'text-green-600' : ''}>
+                <li className={/[0-9]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
                   {/[0-9]/.test(password) ? '✓' : '○'} Un numero
                 </li>
-                <li className={/[!@#$%^&*]/.test(password) ? 'text-green-600' : ''}>
+                <li className={/[!@#$%^&*]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
                   {/[!@#$%^&*]/.test(password) ? '✓' : '○'} Un carattere speciale (!@#$%^&*)
                 </li>
               </ul>
@@ -171,15 +171,15 @@ export function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {loading ? 'Creazione account...' : 'Crea Account'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Hai già un account?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/login" className="font-medium text-primary hover:text-primary/80">
               Accedi
             </Link>
           </p>
