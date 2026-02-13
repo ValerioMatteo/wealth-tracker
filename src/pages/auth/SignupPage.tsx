@@ -49,9 +49,9 @@ export function SignupPage() {
         <div className="w-full max-w-md">
           <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
             <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10">
                 <svg
-                  className="h-8 w-8 text-emerald-400"
+                  className="h-8 w-8 text-emerald-600 dark:text-emerald-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -93,7 +93,7 @@ export function SignupPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            <div className="mb-4 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-400">
               {error}
             </div>
           )}
@@ -150,19 +150,19 @@ export function SignupPage() {
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-foreground">
               <p className="font-medium">Requisiti password:</p>
               <ul className="mt-2 space-y-1 text-xs">
-                <li className={password.length >= 12 ? 'text-emerald-400' : 'text-muted-foreground'}>
+                <li className={password.length >= 12 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>
                   {password.length >= 12 ? '✓' : '○'} Almeno 12 caratteri
                 </li>
-                <li className={/[A-Z]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
+                <li className={/[A-Z]/.test(password) ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>
                   {/[A-Z]/.test(password) ? '✓' : '○'} Una lettera maiuscola
                 </li>
-                <li className={/[a-z]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
+                <li className={/[a-z]/.test(password) ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>
                   {/[a-z]/.test(password) ? '✓' : '○'} Una lettera minuscola
                 </li>
-                <li className={/[0-9]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
+                <li className={/[0-9]/.test(password) ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>
                   {/[0-9]/.test(password) ? '✓' : '○'} Un numero
                 </li>
-                <li className={/[!@#$%^&*]/.test(password) ? 'text-emerald-400' : 'text-muted-foreground'}>
+                <li className={/[!@#$%^&*]/.test(password) ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>
                   {/[!@#$%^&*]/.test(password) ? '✓' : '○'} Un carattere speciale (!@#$%^&*)
                 </li>
               </ul>

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useTheme } from '@/hooks/useTheme'
 
 // Layout
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -74,6 +75,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const initialize = useAuthStore((state) => state.initialize)
+  useTheme()
 
   useEffect(() => {
     initialize()

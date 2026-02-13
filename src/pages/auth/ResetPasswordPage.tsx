@@ -29,9 +29,9 @@ export function ResetPasswordPage() {
         <div className="w-full max-w-md">
           <div className="rounded-xl border border-border bg-card p-8 shadow-2xl">
             <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10">
                 <svg
-                  className="h-8 w-8 text-emerald-400"
+                  className="h-8 w-8 text-emerald-600 dark:text-emerald-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -75,7 +75,7 @@ export function ResetPasswordPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            <div className="mb-4 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-400">
               {error}
             </div>
           )}

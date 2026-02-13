@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { supabase, updatePassword } from '@/lib/supabase'
 import { Settings, User, Shield, Bell, Save } from 'lucide-react'
+import { applyTheme } from '@/hooks/useTheme'
 import type { Currency, UserPreferences } from '@/types'
 
 const CURRENCIES: Currency[] = ['EUR', 'USD', 'GBP', 'CHF', 'JPY']
@@ -13,7 +14,7 @@ export function SettingsPage() {
   const [preferences, setPreferences] = useState<UserPreferences>({
     default_currency: 'EUR',
     date_format: 'DD/MM/YYYY',
-    theme: 'dark',
+    theme: 'light',
     notifications_enabled: true,
     email_reports: false,
   })
@@ -85,7 +86,7 @@ export function SettingsPage() {
       {/* Messages */}
       {message && (
         <div className={`rounded-xl border p-4 ${
-          message.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-red-500/30 bg-red-500/5 text-red-400'
+          message.type === 'success' ? 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' : 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/5 text-red-600 dark:text-red-400'
         }`}>
           <p className="text-sm">{message.text}</p>
         </div>
@@ -162,7 +163,11 @@ export function SettingsPage() {
             <label className="mb-1 block text-sm font-medium text-foreground">Tema</label>
             <select
               value={preferences.theme}
-              onChange={e => setPreferences({ ...preferences, theme: e.target.value as 'light' | 'dark' | 'system' })}
+              onChange={e => {
+                const newTheme = e.target.value as 'light' | 'dark' | 'system'
+                setPreferences({ ...preferences, theme: newTheme })
+                applyTheme(newTheme)
+              }}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none"
             >
               <option value="dark">Scuro</option>

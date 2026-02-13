@@ -150,7 +150,7 @@ export function AssetsPage() {
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Guadagno/Perdita</p>
-          <p className={`mt-1 text-2xl font-bold ${totalGain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <p className={`mt-1 text-2xl font-bold ${totalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
             {totalGain >= 0 ? '+' : ''}€{totalGain.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
             <span className="ml-2 text-sm">({totalGain >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%)</span>
           </p>
@@ -310,10 +310,10 @@ export function AssetsPage() {
                 className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-secondary/50"
               >
                 <div className="flex items-center gap-4">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${gain >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${gain >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-red-50 dark:bg-red-500/10'}`}>
                     {gain >= 0
-                      ? <TrendingUp className="h-5 w-5 text-emerald-400" />
-                      : <TrendingDown className="h-5 w-5 text-red-400" />
+                      ? <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      : <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
                     }
                   </div>
                   <div>
@@ -328,7 +328,7 @@ export function AssetsPage() {
                 <div className="flex items-center gap-6">
                   <div className="text-right">
                     <p className="font-medium text-foreground">€{(asset.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    <p className={`text-sm ${gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <p className={`text-sm ${gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                       {gain >= 0 ? '+' : ''}€{gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                       {' '}({gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%)
                     </p>

@@ -94,8 +94,8 @@ export function TaxesPage() {
 
       {/* Crypto threshold warning */}
       {cryptoCheck.exceeded && (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
-          <p className="text-sm font-medium text-yellow-400">Soglia Crypto Superata</p>
+        <div className="rounded-xl border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/5 p-4">
+          <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Soglia Crypto Superata</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Il valore delle tue crypto (€{cryptoCheck.totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })})
             supera la soglia di €{cryptoCheck.threshold.toLocaleString('it-IT')}. Le plusvalenze sono soggette a tassazione al 26%.
@@ -139,13 +139,13 @@ export function TaxesPage() {
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">Imposte Totali Dovute</p>
-              <p className="mt-1 text-2xl font-bold text-red-400">
+              <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
                 €{calcResult.total_tax_owed.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">Capital Gains Totali</p>
-              <p className={`mt-1 text-2xl font-bold ${calcResult.total_capital_gains >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <p className={`mt-1 text-2xl font-bold ${calcResult.total_capital_gains >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                 €{calcResult.total_capital_gains.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -169,7 +169,7 @@ export function TaxesPage() {
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="font-semibold text-foreground">Totale Imposte</span>
-                <span className="text-lg font-bold text-red-400">€{calcResult.total_tax_owed.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                <span className="text-lg font-bold text-red-600 dark:text-red-400">€{calcResult.total_tax_owed.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -202,7 +202,7 @@ export function TaxesPage() {
                           {new Date(g.sale_date).toLocaleDateString('it-IT')} @ €{g.sale_price.toFixed(2)}
                         </td>
                         <td className="px-3 py-2 text-right text-sm text-foreground">{g.quantity}</td>
-                        <td className={`px-3 py-2 text-right text-sm font-medium ${g.gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <td className={`px-3 py-2 text-right text-sm font-medium ${g.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           €{g.gain.toFixed(2)}
                         </td>
                         <td className="px-3 py-2 text-right text-sm text-foreground">{(g.tax_rate * 100).toFixed(1)}%</td>
@@ -250,7 +250,7 @@ export function TaxesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-foreground">€{ev.taxable_amount.toFixed(2)}</p>
-                  <p className="text-xs text-red-400">Imposta: €{ev.tax_owed.toFixed(2)}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400">Imposta: €{ev.tax_owed.toFixed(2)}</p>
                 </div>
               </div>
             ))}
