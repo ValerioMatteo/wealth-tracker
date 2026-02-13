@@ -143,11 +143,11 @@ export function CashFlowsPage() {
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Ricevuti</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-400">€{totalReceived.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+          <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">€{totalReceived.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Previsti</p>
-          <p className="mt-1 text-2xl font-bold text-blue-400">€{totalForecasted.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+          <p className="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">€{totalForecasted.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
         </div>
       </div>
 
@@ -274,11 +274,11 @@ export function CashFlowsPage() {
             >
               <div className="flex items-center gap-4">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                  cf.is_forecasted ? 'bg-blue-500/10' : 'bg-emerald-500/10'
+                  cf.is_forecasted ? 'bg-blue-50 dark:bg-blue-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'
                 }`}>
                   {cf.is_recurring
-                    ? <RefreshCw className={`h-5 w-5 ${cf.is_forecasted ? 'text-blue-400' : 'text-emerald-400'}`} />
-                    : <DollarSign className={`h-5 w-5 ${cf.is_forecasted ? 'text-blue-400' : 'text-emerald-400'}`} />
+                    ? <RefreshCw className={`h-5 w-5 ${cf.is_forecasted ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
+                    : <DollarSign className={`h-5 w-5 ${cf.is_forecasted ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
                   }
                 </div>
                 <div>
@@ -290,11 +290,11 @@ export function CashFlowsPage() {
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className={`font-medium ${cf.is_forecasted ? 'text-blue-400' : 'text-emerald-400'}`}>
+                  <p className={`font-medium ${cf.is_forecasted ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                     €{cf.amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                   </p>
                   <div className="flex gap-2 text-xs text-muted-foreground">
-                    {cf.is_forecasted && <span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-blue-400">Previsto</span>}
+                    {cf.is_forecasted && <span className="rounded bg-blue-50 dark:bg-blue-500/10 px-1.5 py-0.5 text-blue-600 dark:text-blue-400">Previsto</span>}
                     {cf.is_recurring && <span className="rounded bg-secondary px-1.5 py-0.5">Ricorrente</span>}
                   </div>
                 </div>

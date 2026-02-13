@@ -271,7 +271,7 @@ export function TransactionsPage() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
-                        isBuy ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                        isBuy ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'
                       }`}>
                         {isBuy ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                         {txTypeLabel(tx.transaction_type)}

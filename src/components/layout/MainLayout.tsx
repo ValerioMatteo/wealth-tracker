@@ -47,7 +47,7 @@ export function MainLayout() {
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
-                <h1 className="text-xl font-bold text-primary">WealthTracker</h1>
+                <h1 className="text-xl font-bold text-foreground">WealthTracker</h1>
               </div>
             </div>
 
@@ -106,7 +106,7 @@ export function MainLayout() {
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden">
             <div className="fixed inset-y-0 left-0 w-64 bg-card shadow-2xl">
               <div className="flex h-16 items-center justify-between border-b border-border px-4">
-                <h1 className="text-xl font-bold text-primary">WealthTracker</h1>
+                <h1 className="text-xl font-bold text-foreground">WealthTracker</h1>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-muted-foreground"

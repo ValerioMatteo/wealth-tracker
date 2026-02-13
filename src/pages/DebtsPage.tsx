@@ -124,7 +124,7 @@ export function DebtsPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Debito Residuo Totale</p>
-          <p className="mt-1 text-2xl font-bold text-red-400">€{totalDebt.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+          <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">€{totalDebt.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Rata Mensile Totale</p>
@@ -285,14 +285,14 @@ export function DebtsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-400">
+                      <span className="rounded bg-red-50 dark:bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
                         {debtTypeLabel(debt.debt_type)}
                       </span>
                       <h3 className="font-semibold text-foreground">{debt.lender}</h3>
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
                       <p className="text-muted-foreground">Capitale: <span className="text-foreground">€{debt.principal_amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span></p>
-                      <p className="text-muted-foreground">Residuo: <span className="text-red-400">€{debt.remaining_balance.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span></p>
+                      <p className="text-muted-foreground">Residuo: <span className="text-red-600 dark:text-red-400">€{debt.remaining_balance.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span></p>
                       <p className="text-muted-foreground">Tasso: <span className="text-foreground">{debt.interest_rate}%</span></p>
                       <p className="text-muted-foreground">Rata: <span className="text-foreground">€{debt.monthly_payment.toLocaleString('it-IT', { minimumFractionDigits: 2 })}/mese</span></p>
                       <p className="text-muted-foreground">Inizio: <span className="text-foreground">{new Date(debt.start_date).toLocaleDateString('it-IT')}</span></p>

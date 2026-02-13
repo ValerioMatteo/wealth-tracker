@@ -149,7 +149,7 @@ export function DashboardPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Valore Portfolio</p>
-            <PieChart className="h-5 w-5 text-blue-400" />
+            <PieChart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground">
             €{stats.totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
@@ -161,14 +161,14 @@ export function DashboardPage() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Guadagno/Perdita</p>
             {stats.totalGain >= 0
-              ? <TrendingUp className="h-5 w-5 text-emerald-400" />
-              : <TrendingDown className="h-5 w-5 text-red-400" />
+              ? <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              : <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
             }
           </div>
-          <p className={`mt-2 text-2xl font-bold ${stats.totalGain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <p className={`mt-2 text-2xl font-bold ${stats.totalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
             {stats.totalGain >= 0 ? '+' : ''}€{stats.totalGain.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
           </p>
-          <p className={`mt-1 text-xs ${stats.totalGain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <p className={`mt-1 text-xs ${stats.totalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
             {stats.totalGain >= 0 ? '+' : ''}{stats.totalGainPercent.toFixed(2)}%
           </p>
         </div>
@@ -176,9 +176,9 @@ export function DashboardPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Debiti Totali</p>
-            <CreditCard className="h-5 w-5 text-red-400" />
+            <CreditCard className="h-5 w-5 text-red-600 dark:text-red-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-red-400">
+          <p className="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">
             €{stats.totalDebt.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">{debts.length} debiti</p>
@@ -235,10 +235,10 @@ export function DashboardPage() {
               {stats.topPerformers.map(a => (
                 <div key={a.id} className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-secondary/50">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.gain >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.gain >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-red-50 dark:bg-red-500/10'}`}>
                       {a.gain >= 0
-                        ? <ArrowUpRight className="h-4 w-4 text-emerald-400" />
-                        : <ArrowDownRight className="h-4 w-4 text-red-400" />
+                        ? <ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        : <ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" />
                       }
                     </div>
                     <div>
@@ -248,7 +248,7 @@ export function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">€{(a.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    <p className={`text-xs ${a.gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <p className={`text-xs ${a.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                       {a.gain >= 0 ? '+' : ''}{a.gainPercent.toFixed(2)}%
                     </p>
                   </div>
@@ -270,8 +270,8 @@ export function DashboardPage() {
                 <div key={a.id} className="rounded-lg border border-border p-3">
                   <p className="text-sm font-medium text-foreground">{a.name}</p>
                   <p className="text-xs text-muted-foreground">{a.symbol || a.asset_type}</p>
-                  <p className="mt-1 text-sm font-medium text-red-400">{a.gainPercent.toFixed(2)}%</p>
-                  <p className="text-xs text-red-400">€{a.gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                  <p className="mt-1 text-sm font-medium text-red-600 dark:text-red-400">{a.gainPercent.toFixed(2)}%</p>
+                  <p className="text-xs text-red-600 dark:text-red-400">€{a.gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
                 </div>
               ))}
           </div>
@@ -321,7 +321,7 @@ export function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">€{(asset.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    <p className={`text-xs ${gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <p className={`text-xs ${gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                       {gain >= 0 ? '+' : ''}€{gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })} ({gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%)
                     </p>
                   </div>
