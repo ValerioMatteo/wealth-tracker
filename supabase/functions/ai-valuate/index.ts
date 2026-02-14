@@ -108,7 +108,7 @@ serve(async (req) => {
       date: new Date().toISOString(),
     }
 
-    // Salva la valutazione nei metadata dell'asset
+    // Salva la valutazione nei metadata dell'asset e nella tabella manual_valuations
     if (asset_id) {
       const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -116,10 +116,10 @@ serve(async (req) => {
         { auth: { persistSession: false } }
       )
 
-      // Recupera metadata esistenti e aggiungi la valutazione AI
+      // Recupera metadata esistenti e l'utente proprietario
       const { data: currentAsset } = await supabaseAdmin
         .from('assets')
-        .select('metadata')
+        .select('metadata, portfolio_id')
         .eq('id', asset_id)
         .single()
 
@@ -139,6 +139,28 @@ serve(async (req) => {
         .from('assets')
         .update({ metadata: updatedMetadata })
         .eq('id', asset_id)
+
+      // Salva anche nella tabella manual_valuations per storico
+      if (currentAsset?.portfolio_id) {
+        const { data: portfolio } = await supabaseAdmin
+          .from('portfolios')
+          .select('user_id')
+          .eq('id', currentAsset.portfolio_id)
+          .single()
+
+        if (portfolio?.user_id) {
+          await supabaseAdmin.from('manual_valuations').insert({
+            asset_id,
+            user_id: portfolio.user_id,
+            value: valuation.suggested_value,
+            source: 'ai',
+            confidence: valuation.confidence,
+            reasoning: valuation.reasoning,
+            factors: valuation.factors,
+            data_sources: valuation.data_sources,
+          })
+        }
+      }
     }
 
     return new Response(JSON.stringify(valuation), {

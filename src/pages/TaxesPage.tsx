@@ -1,29 +1,59 @@
 import { useEffect, useState } from 'react'
 import { usePortfolioStore } from '@/stores/usePortfolioStore'
-import { useAuthStore } from '@/stores/useAuthStore'
-import { taxCalculator } from '@/lib/taxCalculator'
 import { Calculator, Download, RefreshCw } from 'lucide-react'
 
+interface CapitalGain {
+  asset_id: string
+  asset_name: string
+  asset_type: string
+  purchase_date: string
+  sale_date: string
+  purchase_price: number
+  sale_price: number
+  quantity: number
+  gain: number
+  tax_rate: number
+  tax_owed: number
+}
+
+interface TaxCalculationResult {
+  tax_year: number
+  capital_gains: CapitalGain[]
+  total_capital_gains: number
+  dividend_income: number
+  interest_income: number
+  total_taxable_income: number
+  total_tax_owed: number
+  breakdown: {
+    capital_gains_tax: number
+    dividend_tax: number
+    interest_tax: number
+  }
+  crypto_threshold: {
+    exceeded: boolean
+    total_value: number
+    threshold: number
+  }
+  report?: string
+}
+
 export function TaxesPage() {
-  const { user } = useAuthStore()
   const {
     currentPortfolio,
     assets,
-    transactions,
-    cashFlows,
     taxEvents,
     isLoading,
     fetchPortfolios,
     fetchTransactions,
     fetchCashFlows,
     fetchTaxEvents,
-    saveTaxEvents,
+    calculateTaxesServer,
   } = usePortfolioStore()
 
   const currentYear = new Date().getFullYear()
   const [selectedYear, setSelectedYear] = useState(currentYear)
   const [calculating, setCalculating] = useState(false)
-  const [calcResult, setCalcResult] = useState<ReturnType<typeof taxCalculator.calculateTaxes> | null>(null)
+  const [calcResult, setCalcResult] = useState<TaxCalculationResult | null>(null)
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
 
   useEffect(() => { fetchPortfolios() }, [fetchPortfolios])
@@ -33,31 +63,45 @@ export function TaxesPage() {
     fetchTaxEvents(selectedYear)
   }, [assets, currentPortfolio, selectedYear, fetchTransactions, fetchCashFlows, fetchTaxEvents])
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
     setCalculating(true)
-    const result = taxCalculator.calculateTaxes(transactions, assets, cashFlows, selectedYear)
-    setCalcResult(result)
+    try {
+      const result = await calculateTaxesServer(selectedYear)
+      setCalcResult(result)
+    } catch {
+      // Error handled by store
+    }
     setCalculating(false)
   }
 
-  const handleSaveEvents = async () => {
-    if (!calcResult || !user) return
-    const events = taxCalculator.generateTaxEvents(user.id, transactions, assets, cashFlows, selectedYear)
-    await saveTaxEvents(events)
+  const handleSaveCalculation = async () => {
+    if (!calcResult) return
+    setCalculating(true)
+    try {
+      await calculateTaxesServer(selectedYear, undefined, true)
+      await fetchTaxEvents(selectedYear)
+    } catch {
+      // Error handled by store
+    }
+    setCalculating(false)
   }
 
-  const handleExportReport = () => {
-    const report = taxCalculator.generateTaxReport(transactions, assets, cashFlows, selectedYear)
-    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `dichiarazione_redditi_${selectedYear}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
+  const handleExportReport = async () => {
+    try {
+      const result = await calculateTaxesServer(selectedYear, undefined, false, 'report')
+      if (result?.report) {
+        const blob = new Blob([result.report], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `dichiarazione_redditi_${selectedYear}.txt`
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+    } catch {
+      // Error handled by store
+    }
   }
-
-  const cryptoCheck = taxCalculator.checkCryptoThreshold(assets)
 
   if (isLoading) {
     return (
@@ -93,12 +137,12 @@ export function TaxesPage() {
       </div>
 
       {/* Crypto threshold warning */}
-      {cryptoCheck.exceeded && (
+      {calcResult?.crypto_threshold?.exceeded && (
         <div className="rounded-xl border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/5 p-4">
           <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Soglia Crypto Superata</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Il valore delle tue crypto (€{cryptoCheck.totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })})
-            supera la soglia di €{cryptoCheck.threshold.toLocaleString('it-IT')}. Le plusvalenze sono soggette a tassazione al 26%.
+            Il valore delle tue crypto (€{calcResult.crypto_threshold.total_value.toLocaleString('it-IT', { minimumFractionDigits: 2 })})
+            supera la soglia di €{calcResult.crypto_threshold.threshold.toLocaleString('it-IT')}. Le plusvalenze sono soggette a tassazione al 26%.
           </p>
         </div>
       )}
@@ -218,8 +262,9 @@ export function TaxesPage() {
           {/* Actions */}
           <div className="flex gap-3">
             <button
-              onClick={handleSaveEvents}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              onClick={handleSaveCalculation}
+              disabled={calculating}
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               <Calculator className="h-4 w-4" /> Salva Calcolo
             </button>

@@ -168,6 +168,19 @@ export interface AIValuationResult {
   date: string
 }
 
+export interface ManualValuation {
+  id: string
+  asset_id: string
+  user_id: string
+  value: number
+  source: 'manual' | 'ai' | 'appraisal'
+  confidence: 'low' | 'medium' | 'high' | null
+  reasoning: string | null
+  factors: string[] | null
+  data_sources: string[] | null
+  created_at: string
+}
+
 export interface Transaction {
   id: string
   asset_id: string

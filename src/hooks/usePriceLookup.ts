@@ -1,14 +1,32 @@
 // src/hooks/usePriceLookup.ts
-// Hook React con debounce per il lookup automatico dei prezzi
+// Hook React con debounce per il lookup automatico dei prezzi via Edge Function
 
 import { useState, useEffect, useRef } from 'react'
-import { lookupPrice, isQuotableAsset, type PriceLookupResult } from '@/lib/api/priceLookup'
+import { supabase } from '@/lib/supabase'
 import type { AssetType, Currency } from '@/types'
+
+export interface PriceLookupResult {
+  price: number
+  name?: string
+  source: string
+  currency?: string
+}
 
 interface UsePriceLookupReturn {
   result: PriceLookupResult | null
   isLoading: boolean
   error: string | null
+}
+
+const QUOTABLE_TYPES: AssetType[] = ['stock', 'bond', 'etf', 'crypto', 'commodity']
+const AI_VALUABLE_TYPES: AssetType[] = ['real_estate', 'luxury']
+
+export function isQuotableAsset(assetType: AssetType): boolean {
+  return QUOTABLE_TYPES.includes(assetType)
+}
+
+export function isAiValuableAsset(assetType: AssetType): boolean {
+  return AI_VALUABLE_TYPES.includes(assetType)
 }
 
 export function usePriceLookup(
@@ -42,9 +60,19 @@ export function usePriceLookup(
 
     timeoutRef.current = setTimeout(async () => {
       try {
-        const data = await lookupPrice(symbol, assetType, currency)
+        const response = await supabase.functions.invoke('get-price', {
+          body: { symbol, asset_type: assetType, currency },
+        })
+
         if (!abortRef.current) {
-          if (data) {
+          if (response.error) {
+            setError('Prezzo non trovato')
+            setIsLoading(false)
+            return
+          }
+
+          const data = response.data as PriceLookupResult | null
+          if (data && data.price) {
             setResult(data)
             setError(null)
           } else {

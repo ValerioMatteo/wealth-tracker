@@ -10,6 +10,9 @@ interface AIValuationState {
   error: string | null
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TaxCalcResult = any
+
 interface PortfolioState {
   portfolios: Portfolio[]
   currentPortfolio: Portfolio | null
@@ -53,6 +56,15 @@ interface PortfolioState {
   requestAiValuation: (assetId: string) => Promise<void>
   acceptAiValuation: (assetId: string, value: number) => Promise<void>
   clearAiValuation: () => void
+
+  // Backend tax calculation
+  calculateTaxesServer: (taxYear: number, portfolioIds?: string[], save?: boolean, format?: string) => Promise<TaxCalcResult>
+
+  // Backend portfolio analytics
+  fetchPortfolioAnalytics: (portfolioId: string) => Promise<TaxCalcResult>
+
+  // Manual valuation for non-quoted assets
+  recordManualValuation: (assetId: string, value: number) => Promise<void>
 
   // Transaction actions
   fetchTransactions: (assetId?: string) => Promise<void>
@@ -233,7 +245,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     set({ isRefreshingPrices: true, priceRefreshError: null })
 
     try {
-      const response = await supabase.functions.invoke('refresh-prices', {
+      const response = await supabase.functions.invoke('update-prices', {
         body: { portfolio_id: portfolioId },
       })
 
@@ -309,6 +321,67 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
 
   clearAiValuation: () => {
     set({ aiValuation: { isLoading: false, assetId: null, result: null, error: null } })
+  },
+
+  // --- Backend Tax Calculation ---
+  calculateTaxesServer: async (taxYear: number, portfolioIds?: string[], save = false, format?: string) => {
+    try {
+      const response = await supabase.functions.invoke('calculate-taxes', {
+        body: { tax_year: taxYear, portfolio_ids: portfolioIds, save, format },
+      })
+
+      if (response.error) {
+        throw new Error(response.error.message)
+      }
+
+      return response.data
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Errore nel calcolo delle tasse' })
+      throw error
+    }
+  },
+
+  // --- Backend Portfolio Analytics ---
+  fetchPortfolioAnalytics: async (portfolioId: string) => {
+    try {
+      const response = await supabase.functions.invoke('get-portfolio-analytics', {
+        body: { portfolio_id: portfolioId },
+      })
+
+      if (response.error) {
+        throw new Error(response.error.message)
+      }
+
+      return response.data
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Errore nel recupero delle analytics' })
+      throw error
+    }
+  },
+
+  // --- Manual Valuation ---
+  recordManualValuation: async (assetId: string, value: number) => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    // Update the asset price
+    await get().updateAsset(assetId, {
+      current_price: value,
+      last_updated: new Date().toISOString(),
+    } as Partial<Asset>)
+
+    // Record the valuation
+    const { error } = await supabase.from('manual_valuations').insert({
+      asset_id: assetId,
+      user_id: user.id,
+      value,
+      source: 'manual',
+    })
+
+    if (error) {
+      set({ error: error.message })
+    }
   },
 
   // --- Transactions ---
