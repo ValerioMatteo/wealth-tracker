@@ -11,10 +11,7 @@ import { AuthLayout } from '@/components/layout/AuthLayout'
 // Pages
 import { DashboardPage } from '@/pages/DashboardPage'
 import { PortfoliosPage } from '@/pages/PortfoliosPage'
-import { AssetsPage } from '@/pages/AssetsPage'
-import { TransactionsPage } from '@/pages/TransactionsPage'
-import { CashFlowsPage } from '@/pages/CashFlowsPage'
-import { DebtsPage } from '@/pages/DebtsPage'
+import { PortfolioDetailPage } from '@/pages/PortfolioDetailPage'
 import { TaxesPage } from '@/pages/TaxesPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 
@@ -96,10 +93,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="portfolios" element={<PortfoliosPage />} />
-            <Route path="assets" element={<AssetsPage />} />
-            <Route path="transactions" element={<TransactionsPage />} />
-            <Route path="cash-flows" element={<CashFlowsPage />} />
-            <Route path="debts" element={<DebtsPage />} />
+            <Route path="portfolios/:portfolioId" element={<PortfolioDetailPage />} />
             <Route path="taxes" element={<TaxesPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePortfolioStore } from '@/stores/usePortfolioStore'
 import { Link } from 'react-router-dom'
 import {
@@ -10,7 +10,14 @@ import {
   ArrowDownRight,
   Plus,
   CreditCard,
+  BarChart3,
+  LineChart,
+  ListFilter,
 } from 'lucide-react'
+import { PerformanceChart } from '@/components/dashboard/PerformanceChart'
+import { AllocationCharts } from '@/components/dashboard/AllocationCharts'
+import { CashFlowChart } from '@/components/dashboard/CashFlowChart'
+import { PerformanceMetrics } from '@/components/dashboard/PerformanceMetrics'
 import type { AssetType } from '@/types'
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
@@ -21,7 +28,7 @@ const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   real_estate: 'Immobili',
   luxury: 'Luxury',
   commodity: 'Commodity',
-  cash: 'Liquidità',
+  cash: 'Liquidita',
 }
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
@@ -35,50 +42,55 @@ const ASSET_TYPE_COLORS: Record<AssetType, string> = {
   cash: 'bg-slate-500',
 }
 
+type DashboardSection = 'overview' | 'allocation' | 'cashflow' | 'performance'
+
 export function DashboardPage() {
   const {
-    currentPortfolio,
     portfolios,
-    assets,
+    allAssets,
+    allCashFlows,
+    allTransactions,
     debts,
+    taxEvents,
     isLoading,
     fetchPortfolios,
+    fetchAllAssets,
+    fetchAllCashFlows,
+    fetchAllTransactions,
     fetchDebts,
+    fetchTaxEvents,
   } = usePortfolioStore()
+
+  const [activeSection, setActiveSection] = useState<DashboardSection>('overview')
 
   useEffect(() => {
     fetchPortfolios()
     fetchDebts()
-  }, [fetchPortfolios, fetchDebts])
+    fetchTaxEvents()
+  }, [fetchPortfolios, fetchDebts, fetchTaxEvents])
+
+  useEffect(() => {
+    if (portfolios.length > 0) {
+      fetchAllAssets()
+      fetchAllCashFlows()
+    }
+  }, [portfolios, fetchAllAssets, fetchAllCashFlows])
+
+  useEffect(() => {
+    if (allAssets.length > 0) {
+      fetchAllTransactions()
+    }
+  }, [allAssets, fetchAllTransactions])
 
   const stats = useMemo(() => {
-    const totalValue = assets.reduce((sum, a) => sum + (a.current_value || 0), 0)
-    const totalCost = assets.reduce((sum, a) => sum + a.purchase_price * a.quantity, 0)
+    const totalValue = allAssets.reduce((sum, a) => sum + (a.current_value || 0), 0)
+    const totalCost = allAssets.reduce((sum, a) => sum + a.purchase_price * a.quantity, 0)
     const totalGain = totalValue - totalCost
     const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
     const totalDebt = debts.reduce((sum, d) => sum + d.remaining_balance, 0)
     const netWorth = totalValue - totalDebt
 
-    // Asset allocation
-    const allocationMap = new Map<AssetType, { value: number; count: number }>()
-    assets.forEach(a => {
-      const existing = allocationMap.get(a.asset_type) || { value: 0, count: 0 }
-      allocationMap.set(a.asset_type, {
-        value: existing.value + (a.current_value || 0),
-        count: existing.count + 1,
-      })
-    })
-    const allocation = Array.from(allocationMap.entries())
-      .map(([type, data]) => ({
-        type,
-        value: data.value,
-        count: data.count,
-        percentage: totalValue > 0 ? (data.value / totalValue) * 100 : 0,
-      }))
-      .sort((a, b) => b.value - a.value)
-
-    // Top performers and worst performers
-    const assetsWithGain = assets
+    const assetsWithGain = allAssets
       .filter(a => a.purchase_price > 0 && a.quantity > 0)
       .map(a => ({
         ...a,
@@ -90,8 +102,8 @@ export function DashboardPage() {
     const topPerformers = assetsWithGain.slice(0, 5)
     const worstPerformers = [...assetsWithGain].sort((a, b) => a.gainPercent - b.gainPercent).slice(0, 5)
 
-    return { totalValue, totalCost, totalGain, totalGainPercent, totalDebt, netWorth, allocation, topPerformers, worstPerformers }
-  }, [assets, debts])
+    return { totalValue, totalCost, totalGain, totalGainPercent, totalDebt, netWorth, topPerformers, worstPerformers }
+  }, [allAssets, debts])
 
   if (isLoading) {
     return (
@@ -104,7 +116,7 @@ export function DashboardPage() {
     )
   }
 
-  if (!currentPortfolio) {
+  if (portfolios.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
@@ -124,13 +136,20 @@ export function DashboardPage() {
     )
   }
 
+  const sections: { key: DashboardSection; label: string; icon: React.ReactNode }[] = [
+    { key: 'overview', label: 'Panoramica', icon: <LineChart className="h-4 w-4" /> },
+    { key: 'allocation', label: 'Composizione', icon: <PieChart className="h-4 w-4" /> },
+    { key: 'cashflow', label: 'Cash Flow', icon: <BarChart3 className="h-4 w-4" /> },
+    { key: 'performance', label: 'Performance', icon: <ListFilter className="h-4 w-4" /> },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          {currentPortfolio.name} - {portfolios.length} portfolio{portfolios.length !== 1 ? 's' : ''}
+          Aggregazione di {portfolios.length} portfolio - {allAssets.length} asset totali
         </p>
       </div>
 
@@ -148,13 +167,13 @@ export function DashboardPage() {
 
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Valore Portfolio</p>
+            <p className="text-sm text-muted-foreground">Capitale Investito</p>
             <PieChart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground">
-            €{stats.totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+            €{stats.totalCost.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">{assets.length} asset</p>
+          <p className="mt-1 text-xs text-muted-foreground">Valore: €{stats.totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
@@ -185,152 +204,173 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Asset Allocation */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">Asset Allocation</h2>
-          {stats.allocation.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nessun asset nel portfolio</p>
-          ) : (
-            <div className="space-y-3">
-              {/* Visual bar */}
-              <div className="flex h-4 overflow-hidden rounded-full">
-                {stats.allocation.map(a => (
-                  <div
-                    key={a.type}
-                    className={`${ASSET_TYPE_COLORS[a.type]} transition-all`}
-                    style={{ width: `${a.percentage}%` }}
-                  />
-                ))}
-              </div>
-              {/* Legend */}
-              <div className="space-y-2">
-                {stats.allocation.map(a => (
-                  <div key={a.type} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`h-3 w-3 rounded-full ${ASSET_TYPE_COLORS[a.type]}`} />
-                      <span className="text-sm text-foreground">{ASSET_TYPE_LABELS[a.type]}</span>
-                      <span className="text-xs text-muted-foreground">({a.count})</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-foreground">
-                        €{a.value.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                      </span>
-                      <span className="ml-2 text-xs text-muted-foreground">{a.percentage.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Top Performers */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">Top Performers</h2>
-          {stats.topPerformers.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nessun asset nel portfolio</p>
-          ) : (
-            <div className="space-y-2">
-              {stats.topPerformers.map(a => (
-                <div key={a.id} className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-secondary/50">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.gain >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-red-50 dark:bg-red-500/10'}`}>
-                      {a.gain >= 0
-                        ? <ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        : <ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" />
-                      }
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{a.name}</p>
-                      <p className="text-xs text-muted-foreground">{a.symbol || ASSET_TYPE_LABELS[a.asset_type]}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">€{(a.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    <p className={`text-xs ${a.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {a.gain >= 0 ? '+' : ''}{a.gainPercent.toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Section tabs */}
+      <div className="flex gap-1 overflow-x-auto border-b border-border pb-px">
+        {sections.map(s => (
+          <button
+            key={s.key}
+            onClick={() => setActiveSection(s.key)}
+            className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeSection === s.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
+            }`}
+          >
+            {s.icon}
+            {s.label}
+          </button>
+        ))}
       </div>
 
-      {/* Worst Performers */}
-      {stats.worstPerformers.length > 0 && stats.worstPerformers.some(a => a.gain < 0) && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">Worst Performers</h2>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            {stats.worstPerformers
-              .filter(a => a.gain < 0)
-              .map(a => (
-                <div key={a.id} className="rounded-lg border border-border p-3">
-                  <p className="text-sm font-medium text-foreground">{a.name}</p>
-                  <p className="text-xs text-muted-foreground">{a.symbol || a.asset_type}</p>
-                  <p className="mt-1 text-sm font-medium text-red-600 dark:text-red-400">{a.gainPercent.toFixed(2)}%</p>
-                  <p className="text-xs text-red-600 dark:text-red-400">€{a.gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+      {/* Section content */}
+      {activeSection === 'overview' && (
+        <div className="space-y-6">
+          {/* Performance chart */}
+          <PerformanceChart
+            assets={allAssets}
+            totalValue={stats.totalValue}
+            totalCost={stats.totalCost}
+          />
+
+          {/* Top/Worst Performers */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Top Performers</h2>
+              {stats.topPerformers.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Nessun asset</p>
+              ) : (
+                <div className="space-y-2">
+                  {stats.topPerformers.map(a => (
+                    <div key={a.id} className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-secondary/50">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.gain >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-red-50 dark:bg-red-500/10'}`}>
+                          {a.gain >= 0
+                            ? <ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            : <ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" />
+                          }
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{a.name}</p>
+                          <p className="text-xs text-muted-foreground">{a.symbol || ASSET_TYPE_LABELS[a.asset_type]}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-foreground">€{(a.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                        <p className={`text-xs ${a.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {a.gain >= 0 ? '+' : ''}{a.gainPercent.toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Worst Performers</h2>
+              {stats.worstPerformers.filter(a => a.gain < 0).length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Nessuna perdita</p>
+              ) : (
+                <div className="space-y-2">
+                  {stats.worstPerformers.filter(a => a.gain < 0).map(a => (
+                    <div key={a.id} className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-secondary/50">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/10">
+                          <ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{a.name}</p>
+                          <p className="text-xs text-muted-foreground">{a.symbol || ASSET_TYPE_LABELS[a.asset_type]}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-foreground">€{(a.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-xs text-red-600 dark:text-red-400">{a.gainPercent.toFixed(2)}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* All positions */}
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">Tutte le Posizioni ({allAssets.length})</h2>
+            </div>
+            {allAssets.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">Nessun asset nei portfolio</p>
+                <Link
+                  to="/portfolios"
+                  className="mt-2 inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80"
+                >
+                  <Plus className="h-3 w-3" /> Aggiungi asset
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {allAssets.map(asset => {
+                  const gain = (asset.current_value || 0) - asset.purchase_price * asset.quantity
+                  const gainPercent = asset.purchase_price * asset.quantity > 0
+                    ? (gain / (asset.purchase_price * asset.quantity)) * 100
+                    : 0
+                  const portfolioName = portfolios.find(p => p.id === asset.portfolio_id)?.name || ''
+                  const allocPercent = stats.totalValue > 0 ? ((asset.current_value || 0) / stats.totalValue) * 100 : 0
+
+                  return (
+                    <div
+                      key={asset.id}
+                      className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`h-2 w-2 rounded-full ${ASSET_TYPE_COLORS[asset.asset_type]}`} />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{asset.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {asset.symbol && <span className="mr-1 font-mono">{asset.symbol}</span>}
+                            <span className="rounded bg-secondary px-1 py-0.5 text-[10px]">{ASSET_TYPE_LABELS[asset.asset_type]}</span>
+                            {portfolioName && <span className="ml-1 text-[10px]">- {portfolioName}</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-foreground">€{(asset.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                          <p className={`text-xs ${gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {gain >= 0 ? '+' : ''}€{gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })} ({gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%)
+                          </p>
+                        </div>
+                        <div className="hidden text-right text-xs text-muted-foreground sm:block">
+                          <p>{allocPercent.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* All Assets List */}
-      <div className="rounded-xl border border-border bg-card p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Tutti gli Asset ({assets.length})</h2>
-          <Link
-            to="/assets"
-            className="text-sm text-primary transition-colors hover:text-primary/80"
-          >
-            Gestisci
-          </Link>
-        </div>
-        {assets.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-sm text-muted-foreground">Nessun asset nel portfolio</p>
-            <Link
-              to="/assets"
-              className="mt-2 inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80"
-            >
-              <Plus className="h-3 w-3" /> Aggiungi asset
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {assets.map(asset => {
-              const gain = (asset.current_value || 0) - asset.purchase_price * asset.quantity
-              const gainPercent = asset.purchase_price * asset.quantity > 0
-                ? (gain / (asset.purchase_price * asset.quantity)) * 100
-                : 0
+      {activeSection === 'allocation' && (
+        <AllocationCharts assets={allAssets} />
+      )}
 
-              return (
-                <div
-                  key={asset.id}
-                  className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-secondary/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${ASSET_TYPE_COLORS[asset.asset_type]}`} />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{asset.name}</p>
-                      <p className="text-xs text-muted-foreground">{asset.symbol} - Qtà: {asset.quantity}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">€{(asset.current_value || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    <p className={`text-xs ${gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {gain >= 0 ? '+' : ''}€{gain.toLocaleString('it-IT', { minimumFractionDigits: 2 })} ({gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%)
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+      {activeSection === 'cashflow' && (
+        <CashFlowChart cashFlows={allCashFlows} assets={allAssets} />
+      )}
+
+      {activeSection === 'performance' && (
+        <PerformanceMetrics
+          assets={allAssets}
+          transactions={allTransactions}
+          cashFlows={allCashFlows}
+          taxEvents={taxEvents}
+        />
+      )}
     </div>
   )
 }

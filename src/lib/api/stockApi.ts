@@ -146,6 +146,46 @@ export class StockApiClient {
     return quotes
   }
 
+  async getHistoricalPrices(
+    symbol: string,
+    range: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | 'max' = '1mo'
+  ): Promise<{ date: string; price: number }[]> {
+    try {
+      const intervalMap: Record<string, string> = {
+        '1d': '5m', '5d': '15m', '1mo': '1d', '3mo': '1d',
+        '6mo': '1d', '1y': '1wk', '2y': '1wk', '5y': '1mo', 'max': '1mo',
+      }
+
+      const response = await axios.get(`${YAHOO_FINANCE_BASE_URL}/${symbol}`, {
+        params: { interval: intervalMap[range] || '1d', range },
+      })
+
+      const result = response.data.chart.result[0]
+      const timestamps = result.timestamp || []
+      const closes = result.indicators.quote[0].close || []
+
+      return timestamps.map((ts: number, i: number) => ({
+        date: new Date(ts * 1000).toISOString().slice(0, 10),
+        price: closes[i] ?? 0,
+      })).filter((p: { price: number }) => p.price > 0)
+    } catch (error) {
+      console.error(`Error fetching historical prices for ${symbol}:`, error)
+      return []
+    }
+  }
+
+  async searchByISIN(isin: string): Promise<StockQuote | null> {
+    // Yahoo Finance accepts ISIN as a search term in some markets
+    try {
+      const quote = await this.getQuote(isin)
+      return quote
+    } catch {
+      // ISIN lookup may not work directly - fallback returns null
+      console.warn(`Could not find quote for ISIN ${isin}`)
+      return null
+    }
+  }
+
   clearCache(): void {
     this.cache.clear()
   }

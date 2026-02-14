@@ -7,8 +7,11 @@ interface PortfolioState {
   portfolios: Portfolio[]
   currentPortfolio: Portfolio | null
   assets: Asset[]
+  allAssets: Asset[]
   transactions: Transaction[]
+  allTransactions: Transaction[]
   cashFlows: CashFlow[]
+  allCashFlows: CashFlow[]
   debts: Debt[]
   taxEvents: TaxEvent[]
   isLoading: boolean
@@ -23,17 +26,20 @@ interface PortfolioState {
 
   // Asset actions
   fetchAssets: (portfolioId: string) => Promise<void>
+  fetchAllAssets: () => Promise<void>
   createAsset: (data: Partial<Asset>) => Promise<void>
   updateAsset: (id: string, data: Partial<Asset>) => Promise<void>
   deleteAsset: (id: string) => Promise<void>
 
   // Transaction actions
   fetchTransactions: (assetId?: string) => Promise<void>
+  fetchAllTransactions: () => Promise<void>
   createTransaction: (data: Partial<Transaction>) => Promise<void>
   deleteTransaction: (id: string) => Promise<void>
 
   // Cash Flow actions
   fetchCashFlows: (portfolioId: string) => Promise<void>
+  fetchAllCashFlows: () => Promise<void>
   createCashFlow: (data: Partial<CashFlow>) => Promise<void>
   updateCashFlow: (id: string, data: Partial<CashFlow>) => Promise<void>
   deleteCashFlow: (id: string) => Promise<void>
@@ -53,8 +59,11 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   portfolios: [],
   currentPortfolio: null,
   assets: [],
+  allAssets: [],
   transactions: [],
+  allTransactions: [],
   cashFlows: [],
+  allCashFlows: [],
   debts: [],
   taxEvents: [],
   isLoading: false,
@@ -135,6 +144,25 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     set({ assets: (data || []) as Asset[] })
   },
 
+  fetchAllAssets: async () => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    const portfolios = get().portfolios
+    if (portfolios.length === 0) return
+
+    const portfolioIds = portfolios.map(p => p.id)
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .in('portfolio_id', portfolioIds)
+      .order('name', { ascending: true })
+
+    if (error) { set({ error: error.message }); return }
+    set({ allAssets: (data || []) as Asset[] })
+  },
+
   createAsset: async (data) => {
     const portfolio = get().currentPortfolio
     if (!portfolio) return
@@ -197,6 +225,32 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     set({ transactions: (data || []) as Transaction[] })
   },
 
+  fetchAllTransactions: async () => {
+    const allAssets = get().allAssets
+    if (allAssets.length === 0) {
+      set({ allTransactions: [] })
+      return
+    }
+
+    const assetIds = allAssets.map(a => a.id)
+    // Supabase IN clause has limits, batch if needed
+    const batchSize = 100
+    const allTx: Transaction[] = []
+    for (let i = 0; i < assetIds.length; i += batchSize) {
+      const batch = assetIds.slice(i, i + batchSize)
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .in('asset_id', batch)
+        .order('transaction_date', { ascending: false })
+
+      if (error) { set({ error: error.message }); return }
+      allTx.push(...((data || []) as Transaction[]))
+    }
+
+    set({ allTransactions: allTx })
+  },
+
   createTransaction: async (data) => {
     const totalAmount = (data.quantity || 0) * (data.price || 0) + (data.fees || 0)
 
@@ -231,6 +285,21 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
 
     if (error) { set({ error: error.message }); return }
     set({ cashFlows: (data || []) as CashFlow[] })
+  },
+
+  fetchAllCashFlows: async () => {
+    const portfolios = get().portfolios
+    if (portfolios.length === 0) return
+
+    const portfolioIds = portfolios.map(p => p.id)
+    const { data, error } = await supabase
+      .from('cash_flows')
+      .select('*')
+      .in('portfolio_id', portfolioIds)
+      .order('payment_date', { ascending: false })
+
+    if (error) { set({ error: error.message }); return }
+    set({ allCashFlows: (data || []) as CashFlow[] })
   },
 
   createCashFlow: async (data) => {
