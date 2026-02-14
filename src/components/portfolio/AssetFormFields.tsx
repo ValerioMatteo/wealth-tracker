@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react'
 import type { AssetType, AssetMetadata } from '@/types'
+import { usePriceLookup } from '@/hooks/usePriceLookup'
 
 interface AssetFormState {
   asset_type: AssetType
@@ -41,6 +43,27 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function AssetFormFields({ form, onChange }: AssetFormFieldsProps) {
   const t = form.asset_type
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const formRef = useRef(form)
+  formRef.current = form
+
+  // Auto-lookup prezzo quando l'utente inserisce un simbolo
+  const { result: priceResult, isLoading: isPriceLooking, error: priceError } = usePriceLookup(
+    form.symbol,
+    form.asset_type
+  )
+
+  // Auto-fill prezzo e nome quando il lookup ha successo
+  useEffect(() => {
+    if (priceResult && priceResult.price > 0) {
+      const updates: Partial<AssetFormState> = { current_price: priceResult.price }
+      if (!formRef.current.name && priceResult.name) {
+        updates.name = priceResult.name
+      }
+      onChangeRef.current({ ...formRef.current, ...updates })
+    }
+  }, [priceResult])
 
   const showSymbol = ['stock', 'bond', 'etf', 'crypto'].includes(t)
   const showISIN = ['stock', 'bond', 'etf'].includes(t)
@@ -97,13 +120,28 @@ export function AssetFormFields({ form, onChange }: AssetFormFieldsProps) {
         <div className="grid gap-4 sm:grid-cols-2">
           {showSymbol && (
             <Field label={t === 'crypto' ? 'Simbolo / Ticker' : 'Simbolo / Ticker'}>
-              <input
-                type="text"
-                value={form.symbol}
-                onChange={e => onChange({ ...form, symbol: e.target.value.toUpperCase() })}
-                className={inputClass}
-                placeholder={t === 'crypto' ? 'Es. BTC, ETH' : 'Es. AAPL, VWCE.DE'}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={form.symbol}
+                  onChange={e => onChange({ ...form, symbol: e.target.value.toUpperCase() })}
+                  className={inputClass}
+                  placeholder={t === 'crypto' ? 'Es. BTC, ETH' : 'Es. AAPL, VWCE.DE'}
+                />
+                {isPriceLooking && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+                  </div>
+                )}
+              </div>
+              {priceResult && (
+                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  Prezzo da {priceResult.source}: {priceResult.price.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                </p>
+              )}
+              {priceError && !isPriceLooking && form.symbol.length >= 2 && (
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{priceError}</p>
+              )}
             </Field>
           )}
           {showISIN && (
@@ -147,13 +185,20 @@ export function AssetFormFields({ form, onChange }: AssetFormFieldsProps) {
               />
             </Field>
             <Field label={t === 'real_estate' ? 'Valore Attuale (€)' : 'Prezzo Attuale (€)'}>
-              <input
-                type="number"
-                step="any"
-                value={form.current_price || ''}
-                onChange={e => onChange({ ...form, current_price: parseFloat(e.target.value) || 0 })}
-                className={inputClass}
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  step="any"
+                  value={form.current_price || ''}
+                  onChange={e => onChange({ ...form, current_price: parseFloat(e.target.value) || 0 })}
+                  className={`${inputClass} ${priceResult ? 'border-emerald-400 dark:border-emerald-600' : ''}`}
+                />
+                {priceResult && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                    AUTO
+                  </span>
+                )}
+              </div>
             </Field>
           </>
         )}

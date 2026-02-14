@@ -1,7 +1,17 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
-import type { Portfolio, Asset, Transaction, CashFlow, Debt, TaxEvent } from '@/types'
+import type { Portfolio, Asset, Transaction, CashFlow, Debt, TaxEvent, AIValuationResult } from '@/types'
 
+
+interface AIValuationState {
+  isLoading: boolean
+  assetId: string | null
+  result: AIValuationResult | null
+  error: string | null
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TaxCalcResult = any
 
 interface PortfolioState {
   portfolios: Portfolio[]
@@ -17,6 +27,14 @@ interface PortfolioState {
   isLoading: boolean
   error: string | null
 
+  // Price refresh state
+  isRefreshingPrices: boolean
+  lastPriceRefresh: string | null
+  priceRefreshError: string | null
+
+  // AI Valuation state
+  aiValuation: AIValuationState
+
   // Portfolio actions
   fetchPortfolios: () => Promise<void>
   setCurrentPortfolio: (portfolio: Portfolio) => void
@@ -30,6 +48,23 @@ interface PortfolioState {
   createAsset: (data: Partial<Asset>) => Promise<void>
   updateAsset: (id: string, data: Partial<Asset>) => Promise<void>
   deleteAsset: (id: string) => Promise<void>
+
+  // Price refresh actions
+  refreshPrices: (portfolioId: string) => Promise<void>
+
+  // AI Valuation actions
+  requestAiValuation: (assetId: string) => Promise<void>
+  acceptAiValuation: (assetId: string, value: number) => Promise<void>
+  clearAiValuation: () => void
+
+  // Backend tax calculation
+  calculateTaxesServer: (taxYear: number, portfolioIds?: string[], save?: boolean, format?: string) => Promise<TaxCalcResult>
+
+  // Backend portfolio analytics
+  fetchPortfolioAnalytics: (portfolioId: string) => Promise<TaxCalcResult>
+
+  // Manual valuation for non-quoted assets
+  recordManualValuation: (assetId: string, value: number) => Promise<void>
 
   // Transaction actions
   fetchTransactions: (assetId?: string) => Promise<void>
@@ -68,6 +103,14 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   taxEvents: [],
   isLoading: false,
   error: null,
+
+  // Price refresh state
+  isRefreshingPrices: false,
+  lastPriceRefresh: null,
+  priceRefreshError: null,
+
+  // AI Valuation state
+  aiValuation: { isLoading: false, assetId: null, result: null, error: null },
 
   // --- Portfolios ---
   fetchPortfolios: async () => {
@@ -176,7 +219,6 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
       purchase_price: data.purchase_price || 0,
       purchase_date: data.purchase_date || new Date().toISOString().slice(0, 10),
       current_price: data.current_price || data.purchase_price || 0,
-      current_value: (data.quantity || 0) * (data.current_price || data.purchase_price || 0),
       metadata: data.metadata || {},
     })
 
@@ -196,6 +238,150 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     if (error) { set({ error: error.message }); return }
     const portfolio = get().currentPortfolio
     if (portfolio) await get().fetchAssets(portfolio.id)
+  },
+
+  // --- Price Refresh ---
+  refreshPrices: async (portfolioId: string) => {
+    set({ isRefreshingPrices: true, priceRefreshError: null })
+
+    try {
+      const response = await supabase.functions.invoke('update-prices', {
+        body: { portfolio_id: portfolioId },
+      })
+
+      if (response.error) {
+        throw new Error(response.error.message)
+      }
+
+      // Re-fetch assets per ottenere i prezzi aggiornati
+      await get().fetchAssets(portfolioId)
+
+      set({
+        isRefreshingPrices: false,
+        lastPriceRefresh: new Date().toISOString(),
+      })
+    } catch (error) {
+      set({
+        isRefreshingPrices: false,
+        priceRefreshError: error instanceof Error ? error.message : 'Errore aggiornamento prezzi',
+      })
+    }
+  },
+
+  // --- AI Valuation ---
+  requestAiValuation: async (assetId: string) => {
+    const asset = get().assets.find(a => a.id === assetId)
+    if (!asset) return
+
+    set({ aiValuation: { isLoading: true, assetId, result: null, error: null } })
+
+    try {
+      const response = await supabase.functions.invoke('ai-valuate', {
+        body: {
+          asset_id: asset.id,
+          asset_type: asset.asset_type,
+          name: asset.name,
+          purchase_price: asset.purchase_price,
+          purchase_date: asset.purchase_date,
+          metadata: asset.metadata,
+        },
+      })
+
+      if (response.error) {
+        throw new Error(response.error.message)
+      }
+
+      set({
+        aiValuation: {
+          isLoading: false,
+          assetId,
+          result: response.data as AIValuationResult,
+          error: null,
+        },
+      })
+    } catch (error) {
+      set({
+        aiValuation: {
+          isLoading: false,
+          assetId,
+          result: null,
+          error: error instanceof Error ? error.message : 'Errore valutazione AI',
+        },
+      })
+    }
+  },
+
+  acceptAiValuation: async (assetId: string, value: number) => {
+    await get().updateAsset(assetId, {
+      current_price: value,
+      last_updated: new Date().toISOString(),
+    } as Partial<Asset>)
+    set({ aiValuation: { isLoading: false, assetId: null, result: null, error: null } })
+  },
+
+  clearAiValuation: () => {
+    set({ aiValuation: { isLoading: false, assetId: null, result: null, error: null } })
+  },
+
+  // --- Backend Tax Calculation ---
+  calculateTaxesServer: async (taxYear: number, portfolioIds?: string[], save = false, format?: string) => {
+    try {
+      const response = await supabase.functions.invoke('calculate-taxes', {
+        body: { tax_year: taxYear, portfolio_ids: portfolioIds, save, format },
+      })
+
+      if (response.error) {
+        throw new Error(response.error.message)
+      }
+
+      return response.data
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Errore nel calcolo delle tasse' })
+      throw error
+    }
+  },
+
+  // --- Backend Portfolio Analytics ---
+  fetchPortfolioAnalytics: async (portfolioId: string) => {
+    try {
+      const response = await supabase.functions.invoke('get-portfolio-analytics', {
+        body: { portfolio_id: portfolioId },
+      })
+
+      if (response.error) {
+        throw new Error(response.error.message)
+      }
+
+      return response.data
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Errore nel recupero delle analytics' })
+      throw error
+    }
+  },
+
+  // --- Manual Valuation ---
+  recordManualValuation: async (assetId: string, value: number) => {
+    const result = await supabase.auth.getUser()
+    const user = result.data.user
+    if (!user) return
+
+    // Update the asset price
+    await get().updateAsset(assetId, {
+      current_price: value,
+      last_updated: new Date().toISOString(),
+    } as Partial<Asset>)
+
+    // Record the valuation
+    const { error } = await supabase.from('manual_valuations').insert({
+      asset_id: assetId,
+      user_id: user.id,
+      value,
+      source: 'manual',
+    })
+
+    if (error) {
+      set({ error: error.message })
+    }
   },
 
   // --- Transactions ---

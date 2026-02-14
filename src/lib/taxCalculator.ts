@@ -1,4 +1,7 @@
 // src/lib/taxCalculator.ts
+// DEPRECATED: La logica di calcolo tasse e' stata spostata nel backend.
+// Vedi: supabase/functions/calculate-taxes/index.ts
+// Questo file e' mantenuto solo come reference. Non usare nel frontend.
 
 import type { Asset, Transaction, CashFlow, TaxEvent } from '@/types'
 

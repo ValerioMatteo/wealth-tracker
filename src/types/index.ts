@@ -130,30 +130,55 @@ export interface AssetMetadata {
   exchange?: string
   sector?: string
   country?: string
-  
+
   // Crypto
   blockchain?: string
   wallet_address?: string
-  
+
   // Real Estate
   address?: string
   property_type?: 'residential' | 'commercial' | 'land'
   size_sqm?: number
-  
+
   // Luxury
   brand?: string
   model?: string
   serial_number?: string
   appraisal_date?: string
   certificate?: string
-  
+
   // Commodity
   purity?: number
   weight_grams?: number
   storage_location?: string
-  
+
+  // AI Valuation (per asset non quotati)
+  ai_valuation?: AIValuationResult
+
   // Custom fields
   [key: string]: unknown
+}
+
+export interface AIValuationResult {
+  suggested_value: number
+  confidence: 'low' | 'medium' | 'high'
+  reasoning: string
+  factors: string[]
+  data_sources: string[]
+  date: string
+}
+
+export interface ManualValuation {
+  id: string
+  asset_id: string
+  user_id: string
+  value: number
+  source: 'manual' | 'ai' | 'appraisal'
+  confidence: 'low' | 'medium' | 'high' | null
+  reasoning: string | null
+  factors: string[] | null
+  data_sources: string[] | null
+  created_at: string
 }
 
 export interface Transaction {
