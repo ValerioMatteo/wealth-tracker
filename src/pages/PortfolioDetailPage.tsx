@@ -17,6 +17,8 @@ import {
   ArrowDownRight,
   RefreshCw,
   Layers,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { AssetFormFields } from '@/components/portfolio/AssetFormFields'
 import type { AssetFormState } from '@/components/portfolio/AssetFormFields'
@@ -66,6 +68,10 @@ export function PortfolioDetailPage() {
     createTransaction, deleteTransaction,
     createCashFlow, updateCashFlow, deleteCashFlow,
     createDebt, updateDebt, deleteDebt,
+    // Price refresh
+    isRefreshingPrices, lastPriceRefresh, priceRefreshError, refreshPrices,
+    // AI Valuation
+    aiValuation, requestAiValuation, acceptAiValuation, clearAiValuation,
   } = usePortfolioStore()
 
   const [activeTab, setActiveTab] = useState<PortfolioTab>('overview')
@@ -108,8 +114,15 @@ export function PortfolioDetailPage() {
       setCurrentPortfolio(portfolio)
       fetchAssets(portfolio.id)
       fetchCashFlows(portfolio.id)
+
+      // Auto-refresh prezzi se stale (>15 minuti)
+      const fifteenMinAgo = Date.now() - 15 * 60 * 1000
+      const lastRefresh = lastPriceRefresh ? new Date(lastPriceRefresh).getTime() : 0
+      if (lastRefresh < fifteenMinAgo) {
+        refreshPrices(portfolio.id)
+      }
     }
-  }, [portfolio, setCurrentPortfolio, fetchAssets, fetchCashFlows])
+  }, [portfolio, setCurrentPortfolio, fetchAssets, fetchCashFlows, lastPriceRefresh, refreshPrices])
 
   useEffect(() => {
     if (assets.length > 0) fetchTransactions()
@@ -212,6 +225,25 @@ export function PortfolioDetailPage() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{portfolio.name}</h1>
           {portfolio.description && <p className="text-sm text-muted-foreground">{portfolio.description}</p>}
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={() => refreshPrices(portfolio.id)}
+            disabled={isRefreshingPrices}
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+            title="Aggiorna prezzi da mercato"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshingPrices ? 'animate-spin' : ''}`} />
+            {isRefreshingPrices ? 'Aggiornamento...' : 'Aggiorna Prezzi'}
+          </button>
+          {lastPriceRefresh && (
+            <p className="text-[11px] text-muted-foreground">
+              Ultimo aggiornamento: {new Date(lastPriceRefresh).toLocaleString('it-IT')}
+            </p>
+          )}
+          {priceRefreshError && (
+            <p className="text-[11px] text-red-500">{priceRefreshError}</p>
+          )}
         </div>
       </div>
 
@@ -341,6 +373,74 @@ export function PortfolioDetailPage() {
             </div>
           )}
 
+          {/* AI Valuation Result Panel */}
+          {aiValuation.result && aiValuation.assetId && (
+            <div className="rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-500/5 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                  <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  Valutazione AI - {assets.find(a => a.id === aiValuation.assetId)?.name}
+                </h3>
+                <button onClick={clearAiValuation} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="text-2xl font-bold text-foreground">
+                  {aiValuation.result.suggested_value.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    aiValuation.result.confidence === 'high' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
+                    aiValuation.result.confidence === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' :
+                    'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+                  }`}>
+                    Confidenza: {aiValuation.result.confidence}
+                  </span>
+                </div>
+
+                <p className="text-sm text-muted-foreground">{aiValuation.result.reasoning}</p>
+
+                {aiValuation.result.factors.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {aiValuation.result.factors.map((f, i) => (
+                      <span key={i} className="rounded bg-secondary px-2 py-1 text-xs text-foreground">{f}</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => acceptAiValuation(aiValuation.assetId!, aiValuation.result!.suggested_value)}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Accetta Valore
+                  </button>
+                  <button
+                    onClick={clearAiValuation}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary"
+                  >
+                    Ignora
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Valuation Error */}
+          {aiValuation.error && (
+            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-500/5 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-red-600 dark:text-red-400">{aiValuation.error}</p>
+                <button onClick={clearAiValuation} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {filteredAssets.length === 0 ? (
             <div className="rounded-xl border border-border bg-card py-12 text-center">
               <TrendingUp className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
@@ -379,6 +479,18 @@ export function PortfolioDetailPage() {
                         </div>
                       )}
                       <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        {(a.asset_type === 'real_estate' || a.asset_type === 'luxury') && (
+                          <button
+                            onClick={() => requestAiValuation(a.id)}
+                            disabled={aiValuation.isLoading}
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-purple-50 dark:hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-50"
+                            title="Valuta con AI"
+                          >
+                            {aiValuation.isLoading && aiValuation.assetId === a.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <Sparkles className="h-4 w-4" />}
+                          </button>
+                        )}
                         <button onClick={() => handleEditAsset(a)} className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"><Pencil className="h-4 w-4" /></button>
                         <button onClick={() => { if (confirm('Eliminare questo asset?')) deleteAsset(a.id) }}
                           className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>

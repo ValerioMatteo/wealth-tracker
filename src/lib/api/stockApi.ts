@@ -175,15 +175,25 @@ export class StockApiClient {
   }
 
   async searchByISIN(isin: string): Promise<StockQuote | null> {
-    // Yahoo Finance accepts ISIN as a search term in some markets
+    // Prova ISIN diretto (funziona per molti mercati)
     try {
-      const quote = await this.getQuote(isin)
-      return quote
+      return await this.getQuote(isin)
     } catch {
-      // ISIN lookup may not work directly - fallback returns null
-      console.warn(`Could not find quote for ISIN ${isin}`)
-      return null
+      // Fallback: prova con suffissi di borsa europee
     }
+
+    // Suffissi borse europee (priorita' italiana per BTP/BOT)
+    const suffixes = ['.MI', '.F', '.DE', '.L', '.PA', '.AS']
+    for (const suffix of suffixes) {
+      try {
+        return await this.getQuote(isin + suffix)
+      } catch {
+        continue
+      }
+    }
+
+    console.warn(`Could not find quote for ISIN ${isin}`)
+    return null
   }
 
   clearCache(): void {
