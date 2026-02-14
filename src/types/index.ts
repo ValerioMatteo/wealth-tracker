@@ -385,6 +385,40 @@ export interface DebtFormData {
   metadata?: Partial<DebtMetadata>
 }
 
+// Dashboard / Chart types
+
+export type TimeRange = '1D' | '1W' | '1M' | 'YTD' | '1Y' | 'MAX'
+
+export type AllocationBreakdown = 'type' | 'sector' | 'country'
+
+export interface PerformanceData {
+  capital: number
+  invested_capital: number
+  price_gain: number
+  dividends: number
+  realized_gain: number
+  transaction_costs: number
+  taxes: number
+  running_costs: number
+  total_return: number
+  total_return_percent: number
+  irr: number
+  twrr: number
+}
+
+export interface ChartDataPoint {
+  date: string
+  value: number
+  label?: string
+}
+
+export interface CashFlowByYear {
+  year: number
+  received: number
+  forecasted: number
+  byType: Record<CashFlowType, number>
+}
+
 // Utility types
 
 export type SortDirection = 'asc' | 'desc'

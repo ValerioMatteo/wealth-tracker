@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePortfolioStore } from '@/stores/usePortfolioStore'
-import { Briefcase, Plus, Pencil, Trash2, Star, X } from 'lucide-react'
+import { Briefcase, Plus, Pencil, Trash2, Star, X, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react'
 import type { Currency } from '@/types'
 
 const CURRENCIES: Currency[] = ['EUR', 'USD', 'GBP', 'CHF', 'JPY']
@@ -17,22 +18,28 @@ const emptyForm: FormState = { name: '', description: '', currency: 'EUR', is_de
 export function PortfoliosPage() {
   const {
     portfolios,
-    currentPortfolio,
-    assets,
+    allAssets,
     isLoading,
     fetchPortfolios,
-    setCurrentPortfolio,
+    fetchAllAssets,
     createPortfolio,
     updatePortfolio,
     deletePortfolio,
   } = usePortfolioStore()
 
+  const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { fetchPortfolios() }, [fetchPortfolios])
+  useEffect(() => {
+    fetchPortfolios()
+  }, [fetchPortfolios])
+
+  useEffect(() => {
+    if (portfolios.length > 0) fetchAllAssets()
+  }, [portfolios, fetchAllAssets])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,7 +56,8 @@ export function PortfoliosPage() {
     setForm(emptyForm)
   }
 
-  const handleEdit = (p: typeof portfolios[0]) => {
+  const handleEdit = (e: React.MouseEvent, p: typeof portfolios[0]) => {
+    e.stopPropagation()
     setForm({
       name: p.name,
       description: p.description || '',
@@ -60,9 +68,19 @@ export function PortfoliosPage() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
     if (!confirm('Eliminare questo portfolio e tutti i suoi asset?')) return
     await deletePortfolio(id)
+  }
+
+  const getPortfolioStats = (portfolioId: string) => {
+    const pAssets = allAssets.filter(a => a.portfolio_id === portfolioId)
+    const totalValue = pAssets.reduce((sum, a) => sum + (a.current_value || 0), 0)
+    const totalCost = pAssets.reduce((sum, a) => sum + a.purchase_price * a.quantity, 0)
+    const gain = totalValue - totalCost
+    const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0
+    return { assetCount: pAssets.length, totalValue, gain, gainPercent }
   }
 
   if (isLoading) {
@@ -174,57 +192,68 @@ export function PortfoliosPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {portfolios.map(p => {
-            const isActive = currentPortfolio?.id === p.id
-            const portfolioAssets = isActive ? assets : []
-            const totalValue = portfolioAssets.reduce((sum, a) => sum + (a.current_value || 0), 0)
+            const pStats = getPortfolioStats(p.id)
 
             return (
               <div
                 key={p.id}
-                className={`group relative rounded-xl border p-5 transition-colors ${
-                  isActive
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-card hover:border-primary/30'
-                }`}
+                onClick={() => navigate(`/portfolios/${p.id}`)}
+                className="group relative cursor-pointer rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md"
               >
                 {p.is_default && (
                   <Star className="absolute right-3 top-3 h-4 w-4 fill-primary text-primary" />
                 )}
-                <button
-                  onClick={() => setCurrentPortfolio(p)}
-                  className="w-full text-left"
-                >
+
+                <div className="mb-3">
                   <h3 className="text-lg font-semibold text-foreground">{p.name}</h3>
                   {p.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">{p.description}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{p.description}</p>
                   )}
-                  <div className="mt-3 flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">Valuta: <span className="text-foreground">{p.currency}</span></span>
-                    {isActive && (
-                      <span className="text-muted-foreground">
-                        Valore: <span className="font-medium text-foreground">
-                          {p.currency === 'EUR' ? '€' : p.currency === 'USD' ? '$' : p.currency}{totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                        </span>
-                      </span>
-                    )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Valore</span>
+                    <span className="text-sm font-semibold text-foreground">
+                      €{pStats.totalValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    </span>
                   </div>
-                  {isActive && (
-                    <p className="mt-1 text-xs text-primary">{assets.length} asset nel portfolio</p>
-                  )}
-                </button>
-                <div className="mt-3 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    onClick={() => handleEdit(p)}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Gain/Loss</span>
+                    <span className={`flex items-center gap-1 text-sm font-medium ${pStats.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {pStats.gain >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                      {pStats.gain >= 0 ? '+' : ''}{pStats.gainPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Asset</span>
+                    <span className="text-sm text-foreground">{pStats.assetCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Valuta</span>
+                    <span className="text-sm text-foreground">{p.currency}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                  <div className="flex gap-1">
+                    <button
+                      onClick={(e) => handleEdit(e, p)}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, p.id)}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-primary">
+                    <span>Apri</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
                 </div>
               </div>
             )
